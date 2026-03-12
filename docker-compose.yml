@@ -1,87 +1,247 @@
-version: '3.8'
 services:
+  postgres:
+    image: postgres:16
+    container_name: openwebui-postgres
+    restart: unless-stopped
+    # 用于 COLLATION 版本不同时更新数据库的排序规则版本，解决可能出现的 "collation version mismatch" 错误
+    # docker exec -it openwebui_postgres psql -U postgres用户名 -d postgres数据库名 -c "ALTER DATABASE postgres REFRESH COLLATION VERSION;"
+    # 调整 PostgreSQL 配置以适应 OpenWebUI 的需求，具体参数可以根据实际情况调整
+    command: postgres -c shared_buffers=256MB -c work_mem=16MB -c maintenance_work_mem=128MB -c effective_cache_size=512MB -c max_connections=100
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-random_postgres_password}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+    # - POSTGRES_MULTIPLE_DATABASES=langflow,linkwarden,n8n
+    volumes:
+      - ${POSTGRES_DATA_PATH:-/mnt/postgres}:/var/lib/postgresql/data
+    # 如果需要在数据库初始化时执行自定义 SQL 脚本，可以将脚本放在 ./scripts 目录下，并挂载到容器的 /docker-entrypoint-initdb.d 目录
+    # - ./scripts:/docker-entrypoint-initdb.d
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: openwebui-qdrant
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-random_qdrant_api_key}
+      - QDRANT__SERVICE__ENABLE_API_KEY_AUTHORIZATION=true
+    restart: unless-stopped
+    volumes:
+      - ${QDRANT_DATA_PATH:-/mnt/qdrant}:/qdrant/storage
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/6333"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: openwebui-valkey
+    restart: unless-stopped
+    command: valkey-server --requirepass ${VALKEY_PASSWORD:-random_valkey_password}
+    volumes:
+      - ${VALKEY_DATA_PATH:-/mnt/valkey}:/data
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    healthcheck:
+      # 请见 https://valkey.io/topics/cli/
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  playwright:
+    # 版本必须要与 OpenWebUI 中的 PLAYWRIGHT_VERSION 环境变量一致，否则可能会因连接失败而导致工具无法正常工作
+    # 可使用 scripts/get-playwright-version.sh 脚本来获取当前 OpenWebUI 镜像中 Playwright 的版本
+    # 脚本会自动设置 PLAYWRIGHT_VERSION 和 PLAYWRIGHT_DISTRO 环境变量
+    image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-1.58.0}-${PLAYWRIGHT_DISTRO:-noble}
+    container_name: openwebui-playwright
+    command: npx -y playwright@${PLAYWRIGHT_VERSION:-1.58.0} run-server --port 3000 --host 0.0.0.0
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+
+  tika:
+    image: apache/tika:latest-full
+    container_name: openwebui-tika
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    restart: unless-stopped
+
+  open-terminal:
+    image: ghcr.io/open-webui/open-terminal
+    container_name: openwebui-open-terminal
+    restart: unless-stopped
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    volumes:
+      - ${OPENTERMINAL_WORKING_PATH:-/mnt/terminal}:/home/user
+    environment:
+      - OPEN_TERMINAL_API_KEY=${OPENTERMINAL_API_KEY:-random_terminal_api_key}
+  mcpo:
+    container_name: openwebui-mcpo
+    image: ghcr.io/open-webui/mcpo:main
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    volumes:
+      - ${MCPO_CONFIG_PATH:-/mnt/mcpo}:/app/config
+    restart: always
+    # 自动热加载配置文件，方便调整 MCPO 设置
+    command: mcpo --api-key ${MCPO_API_KEY:-random_mcp_api_key} --config /app/config/config.json --hot-reload
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 2 bash -c 'cat < /dev/null > /dev/tcp/localhost/8000' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # 如果你不需要 vLLM 提供的 OpenAI API 服务，可以将该服务注释掉
+  vllm:
+    # 使用变量控制镜像版本，默认为 latest
+    image: ${VLLM_IMAGE:-vllm/vllm-openai:latest}
+    container_name: openwebui-vllm
+    restart: always
+    # 共享内存大小
+    shm_size: '32gb'
+    volumes:
+      - ${VLLM_CACHE_DIR:-/mnt/vllm-cache}:/workspace/.cache
+      - ${VLLM_MODELS_DIR:-/mnt/vllm-models}:/models
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    entrypoint: vllm
+    command: >
+      serve
+      /models/${VLLM_MODEL_DIR_NAME}
+      --served-model-name=${VLLM_SERVED_MODEL_NAME:-Qwen3.5}
+      --runner=${VLLM_RUNNER:-auto}
+      --port=5000 
+      --host=0.0.0.0 
+      --max-num-seqs=${VLLM_MAX_NUM_SEQS:-32}
+      --max-model_len=${VLLM_MAX_MODEL_LEN:-4096}
+      --gpu-memory-utilization=${VLLM_GPU_MEMORY_UTILIZATION:-0.8}
+      --api-key=${VLLM_API_KEY:-random_vllm_api_key}
+      --dtype=${VLLM_DTYPE:-auto}
+      ${VLLM_EXTRA_ARGS:-}
+    environment:
+      - PYTORCH_ALLOC_CONF=expandable_segments:True
+      - SAFE_TENSORS_HEADER_SIZE_MAX=1073741824
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://0.0.0.0:5000/v1/models" ]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            # GPU ID 可配置，默认 0
+            device_ids: ['${VLLM_GPU_DEVICE_ID:-0}']
+            capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "5"
+
   openwebui:
     image: ghcr.io/open-webui/open-webui:latest
-    container_name: openwebui
-    hostname: openwebui
     restart: unless-stopped
+    container_name: openwebui-app
     depends_on:
-      - postgres
-      - qdrant
+      postgres:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    # 如果你的 mcpo 启动较慢导致 OpenWebUI 容器的日志中充满连接失败的提示
+    # 可以尝试使用该 mcpo 的健康检查并使用该依赖条件
+    # 但这可能会导致在 mcpo 健康检查失败时 OpenWebUI 无法启动, 请根据实际情况调整
+    # mcpo:
+    #   condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-some_random_postgres_password}@postgres:5432/openwebui
-      - QDRANT_URI=http://qdrant:${QDRANT_PORT:-6333}
+      # =================================================
+      # OpenWebUI 可以通过管理员面板的:
+      # 设置 -> 外部连接 -> 管理 OpenAI 接口连接 -> 添加连接
+      # 来访问本地 vllm OpenAI API 服务地址 http://vllm:5000/v1 
+      # =================================================
+      # 主数据库连接字符串
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-random_postgres_password}@postgres:5432/${POSTGRES_DB:-postgres}
+      # 向量数据库配置
       - VECTOR_DB=${VECTOR_DB:-qdrant}
-      - QDRANT_API_KEY=${QDRANT_API_KEY:-some_random_qdrant_api_key}
-      - PORT=${OPENWEBUI_PORT:-8080}
-      - REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379 
+      - QDRANT_URI=http://qdrant:6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-random_qdrant_api_key}
+      # Redis 配置 - 用于缓存和 WebSocket 支持
+      - REDIS_URL=redis://default:${VALKEY_PASSWORD:-random_valkey_password}@valkey:6379
+      # WebSocket 配置
+      # 如果在配置了上述所有内容后仍遇到 WebSocket 相关问题，可以尝试关闭 ENABLE_WEBSOCKET_SUPPORT
+      # 但不建议在生产环境中这样做，而且也不受官方支持！
+      # 如果您遇到 WebSocket 问题，理想情况下应通过反向代理来提供 WebSocket 支持。
       - ENABLE_WEBSOCKET_SUPPORT=true
-      - WEBSOCKET_MANAGER=redis
-      - WEBSOCKET_REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379
+      - WEBSOCKET_MANAGER=valkey
+      - WEBSOCKET_REDIS_URL=redis://default:${VALKEY_PASSWORD:-random_valkey_password}@valkey:6379
+      - ENABLE_QUERIES_CACHE=true
+      # 数据库连接池配置 - 根据实际负载调整这些参数以获得最佳性能
       - DATABASE_POOL_SIZE=20
       - DATABASE_POOL_MAX_OVERFLOW=10
       - DATABASE_POOL_TIMEOUT=30
       - DATABASE_POOL_RECYCLE=1800
-      - DEFAULT_USER_EMAIL=user@example.com
-      - DEFAULT_USER_PASSWORD=some_random_admin_password
-      - DEFAULT_USER_FIRST_NAME=User
-      - DEFAULT_USER_LAST_NAME=Name
-      - DEFAULT_USER_ROLE=admin
-    volumes:
-      - openwebui_data:/app/backend/data
+      # CORS 配置 - 对 WebSocket 功能至关重要
+      # 请在 CORS_ALLOW_ORIGIN 中添加全部可访问的实例地址
+      # 详见 https://docs.openwebui.com/reference/env-configuration/#cors_allow_origin
+      - CORS_ALLOW_ORIGIN=http://${OPENWEBUI_IP}:${OPENWEBUI_PORT},https://${OPENWEBUI_DOMAIN}
+      # 使用 Hugging Face 镜像
+      - HF_ENDPOINT=https://hf-mirror.com
+      - WHISPER_MODEL_AUTO_UPDATE=true
+      - RAG_EMBEDDING_MODEL_AUTO_UPDATE=true
+      - RAG_RERANKING_MODEL_AUTO_UPDATE=true
+      # 用户代理字符串 - 某些工具可能需要一个常见的用户代理才能正常工作
+      - USER_AGENT=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+      - WEBUI_SECRET_KEY=${OPENWEBUI_SECRET_KEY}
+      # HTTPS 的 Cookie 安全设置，如果您不使用 HTTPS 请设为 false
+      - WEBUI_SESSION_COOKIE_SECURE=${WEBUI_SESSION_COOKIE_SECURE:-false}
+      - WEBUI_AUTH_COOKIE_SECURE=${WEBUI_AUTH_COOKIE_SECURE:-false}
+      # 对于 OAuth/SSO，可能需要使用 'lax'（strict 模式可能会导致 OAuth 回调失败）
+      # - WEBUI_SESSION_COOKIE_SAME_SITE=lax
+      # - WEBUI_AUTH_COOKIE_SAME_SITE=lax
+      # 日志设置
+      - RAG_LOG_LEVEL=NOTSET
+      - AUDIO_LOG_LEVEL=NOTSET
+      - GLOBAL_LOG_LEVEL=DEBUG
+      # 工具服务配置
+      - WEB_LOADER_ENGINE=playwright
+      - PLAYWRIGHT_WS_URL=ws://playwright:3000
+      - MCP_SERVERS=http://mcpo:8000
+      - TIKA_SERVER_URL=http://tika:9998
+      - OPEN_TERMINAL_URL=http://open-terminal:8000
+      - OPEN_TERMINAL_API_KEY=${OPENTERMINAL_API_KEY:-random_terminal_api_key}
+    # 使用容器间通信，确保 OpenWebUI 能够通过服务名称访问数据库和其他服务
     networks:
-      - my_network
+      - ${DOCKER_NETWORK:-example_network}
+    # 外部访问端口
+    ports:
+      - ${OPENWEBUI_PORT:-8080}:8080
+    # 如果需要在本地访问容器内的服务（如 Playwright），可以使用 extra_hosts 将 host.docker.internal 映射到宿主机网关地址，但这可能会带来安全风险，建议仅在开发环境中使用
+    # extra_hosts:
+    #   - host.docker.internal:host-gateway
+    volumes:
+      - ${OPENWEBUI_DATA_PATH:-/mnt/openwebui}:/app/backend/data
+      - ${OPENWEBUI_NLTK_PATH:-/mnt/NLTK}:/root/nltk_data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "-s", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    hostname: postgres
-    restart: unless-stopped
-    command: postgres -c shared_buffers=256MB -c work_mem=16MB -c maintenance_work_mem=128MB -c effective_cache_size=512MB -c max_connections=100
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=some_random_postgres_password
-      - POSTGRES_DB=postgres
-      - POSTGRES_MULTIPLE_DATABASES=langflow,linkwarden,n8n
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d
-    networks:
-      - my_network
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: qdrant
-    hostname: qdrant
-    environment:
-      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-some_random_qdrant_api_key}
-      - QDRANT__SERVICE__ENABLE_API_KEY_AUTHORIZATION=true
-    restart: unless-stopped
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - my_network
-  redis:
-    image: redis:alpine
-    container_name: redis
-    hostname: redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-some_random_redis_password}
-    volumes:
-      - redis_data:/data
-    networks:
-      - my_network
-
+  
 networks:
-  my_network:
+  ${DOCKER_NETWORK:-example_network}:
     external: true
-    name: my_network
-volumes:
-  openwebui_data:
-  postgres_data:
-  qdrant_data:
-  redis_data:

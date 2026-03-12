@@ -1,371 +1,399 @@
-# Open Web UI, Postgres, Qdrant Docker Compose
+# OPQMTTMPV Stack - Open Web UI 私有化通用部署方案
 
-[![Docs](https://img.shields.io/badge/Docs-Reference-blue.svg)](https://github.com/open-webui/open-webui)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
-[![OpenWebUI](https://img.shields.io/badge/OpenWebUI-Latest-green.svg)](https://openwebui.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Backups](https://img.shields.io/badge/Backups-Automated-yellow.svg)](https://www.postgresql.org/docs/current/backup.html)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Latest-blue)](https://qdrant.tech/)
+[![vLLM](https://img.shields.io/badge/vLLM-High--Performance-orange)](https://docs.vllm.ai/)
 
-![alt text](opq.jpg)
+本项目提供基于 Docker Compose 的 Open Web UI 私有部署方案, 采用模块化架构, 包含完整的生产级组件.
 
-A short guide to setting up the "OPQ Stack"*
+## 组件介绍
 
-*( Note: to the best of my knowledge, nobody actually calls it this..)*
+本方案使用 OPQMTTMPV 容器栈:
 
-## Date
+| 字母 | 组件 | 说明 |
+|------|------|------|
+| **O** | [Open Web UI](https://github.com/open-webui/open-webui) | 主容器, 提供 Web 界面 |
+| **P** | [PostgreSQL](https://www.postgresql.org/) | 主数据库, 替换 SQLite |
+| **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
+| **M** | [MCPO](https://github.com/open-webui/mcpo) | 官方 MCP 桥接器, 将 MCP 服务器转换为 OpenAI 兼容 API |
+| **T** | [Apache Tika](https://github.com/apache/tika) | 文档提取器 |
+| **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
+| **P** | [Playwright](https://github.com/microsoft/playwright) | 无头浏览器, 用于网页访问 |
+| **V** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
+| **V** | [vLLM](https://github.com/vllm-project/vllm) | 高性能 LLM 后端(可选) |
 
-Tech moves fast and AI at lightning pace. Given the high probability that these docs will become rapidly outdated and soon after obsolete, they were drafted on March 12, 2025. Accuracy at any point after that date cannot be vouched for...
+> **提示**: vLLM 为可选服务, 如不需要可禁用. 如需替换其他组件, 可自由组合:
+>
+> - LLM本地后端: 可使用 [Ollama](https://ollama.com/) 或 [SGLang](https://github.com/sgl-project/sglang) 或 [llama.cpp](https://github.com/ggml-org/llama.cpp) 来替代 vLLM
+> - 文档提取: 可使用 [MinerU](https://github.com/opendatalab/MinerU) 或 [docling](https://github.com/docling-project/docling) 替代 Tika
+> - 浏览器工具: 可使用 [playwright-MCP](https://github.com/microsoft/playwright-mcp) 或 [browserless](https://github.com/browserless/browserless) 或 替代 Playwright
 
-# Deploying Open Web UI With Postgres And Qdrant 
+## 前置要求
 
-Note: I added Redis to my stack also. If you don't want that, remove from the code samples.
+- Docker Engine 24.0+
+- Docker Compose v2.20+
+- NVIDIA GPU + Driver 535+(仅使用 vLLM 时需要)
 
-## Standard Docker Compose
+## 可选服务
 
-For the standard (official) OpenWebUI Docker Compose, see [here](https://github.com/open-webui/open-webui/blob/main/docker-compose.yaml) and their documentation.
+以下服务为**可选**, 可根据需求禁用或替换:
 
-## Modification 1: SQLite to Postgres
+| 服务 | 用途 | 禁用方式 |
+|------|------|----------|
+| vLLM | 本地 LLM 推理 | 注释 `docker-compose.yml` 中的 vllm 服务 |
+| MCPO | MCP 工具桥接 | 注释 mcpo 服务 |
+| Playwright | 网页访问工具 | 注释 playwright 服务 |
+| Open Terminal | 终端访问 | 注释 open-terminal 服务 |
+| Tika | 文档提取 | 注释 tika 服务 |
 
-Refer to the project's (long!) list of environment variables [here](https://docs.openwebui.com/getting-started/env-configuration/).
+## 快速开始
 
-Open Web UI is provided as a single container which - while convenient - makes it a little harder to understand what's "under the hood." Database-wise, at the time of writing, the answer is SQLite. 
+### 1. 创建 Docker 网络
 
-If you prefer Postgres, then you'll need to do a few things:
-
-1) Set up a PostgreSQL instance
-
-You can do this as part of the stack *or* you can use a remote PostgreSQL instance. Some options include:
-
-- Using the containerized PostgreSQL as shown in this guide
-- Using a non-dockerized PostgreSQL installed directly on your host machine
-- Using a managed PostgreSQL service (like AWS RDS, Azure Database for PostgreSQL, etc.)
-
-Just remember: data in containers is not persistent until it's made to be persistent. So you'll need to ensure that your PostgreSQL container has a persistent volume in order for your data to survive reboots.
-
-2) Set the `DATABASE_URL` environment variable
-
-```yaml
-`version: '3.8'
-services:
-  openwebui:
-    image: ghcr.io/open-webui/open-webui:latest
-    container_name: openwebui
-    hostname: openwebui
-    restart: unless-stopped
-    depends_on:
-      - postgres
-    environment:
-      - DATABASE_URL=postgresql://postgres:some_random_password@postgres:5432/openwebui
-      - PORT=${OPENWEBUI_PORT:-8080}
-      - REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379 # Ensure redis is available in your infra (docker-compose, k8s, etc)
-      - ENABLE_WEBSOCKET_SUPPORT=true
-      - WEBSOCKET_MANAGER=redis
-      - WEBSOCKET_REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379
-      - DATABASE_POOL_SIZE=20
-      - DATABASE_POOL_MAX_OVERFLOW=10
-      - DATABASE_POOL_TIMEOUT=30
-      - DATABASE_POOL_RECYCLE=1800
-      - DEFAULT_USER_EMAIL=user@example.com
-      - DEFAULT_USER_PASSWORD=some_random_admin_password
-      - DEFAULT_USER_FIRST_NAME=User
-      - DEFAULT_USER_LAST_NAME=Name
-      - DEFAULT_USER_ROLE=admin
-    volumes:
-      - openwebui_data:/app/backend/data
-    networks:
-      - my_network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    hostname: postgres
-    restart: unless-stopped
-    command: postgres -c shared_buffers=256MB -c work_mem=16MB -c maintenance_work_mem=128MB -c effective_cache_size=
-```    
-
-## Migrating from SQLite to PostgreSQL
-
-**Important Note**: Simply changing the `DATABASE_URL` environment variable from SQLite to PostgreSQL will not automatically migrate your existing data!
-
-You'll need to perform a migration to transfer your data from SQLite to PostgreSQL.
-
-For migrating your existing OpenWebUI data from SQLite to PostgreSQL, you can use this helpful migration tool created by Taylor Wildson:
-
-[![SQLite to PostgreSQL Migration](https://img.shields.io/badge/Migration_Tool-SQLite_to_PostgreSQL-orange?logo=github)](https://github.com/taylorwilsdon/open-webui-postgres-migration)
-
-This Python script automates the process of:
-1. Extracting data from your SQLite database
-2. Transforming it to be compatible with PostgreSQL
-3. Loading it into your new PostgreSQL database
-
-The migration process preserves your:
-- User accounts and settings
-- Conversation history
-- Model configurations
-- RAG documents and collections
-
-Follow the instructions in the repository to perform the migration before switching your OpenWebUI instance to use PostgreSQL. It's highly recommended to do all database operations when the data is "cold" (ie, the containers reading and writing to them are down; leave some buffer time for residual read/write operations to wind up).
-
-## Modification 2: ChromaDB To Qdrant
-
-See the RAG section of the docs for these variables.
-
-Most importantly, you'll want to define a value for `VECTOR_DB` which - if not provided - will mean that the instance uses its default ChromaDB (that comes along for the ride!).
-
-Currently supported alternatives (again, at the time of writing) are:
-
--  Milvus  
--  Qdrant  
--  OpenSearch
--  PG Vector 
-
-## Modification 3: Redis for WebSocket Support
-
-Redis is used for WebSocket support in OpenWebUI, which enables real-time communication. The configuration includes setting up a Redis instance and configuring OpenWebUI to use it for WebSocket management.
-
-This is particularly important for features that require real-time updates, such as streaming responses from AI models.
-
-## Docker Compose Snippet
-
-```yaml
-version: '3.8'
-services:
-  openwebui:
-    image: ghcr.io/open-webui/open-webui:latest
-    container_name: openwebui
-    hostname: openwebui
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - qdrant
-    environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-some_random_postgres_password}@postgres:5432/openwebui
-      - QDRANT_URI=http://qdrant:${QDRANT_PORT:-6333}
-      - VECTOR_DB=${VECTOR_DB:-qdrant}
-      - QDRANT_API_KEY=${QDRANT_API_KEY:-some_random_qdrant_api_key}
-      - PORT=${OPENWEBUI_PORT:-8080}
-      - REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379 
-      - ENABLE_WEBSOCKET_SUPPORT=true
-      - WEBSOCKET_MANAGER=redis
-      - WEBSOCKET_REDIS_URL=redis://default:${REDIS_PASSWORD:-some_random_redis_password}@redis:6379
-      - DATABASE_POOL_SIZE=20
-      - DATABASE_POOL_MAX_OVERFLOW=10
-      - DATABASE_POOL_TIMEOUT=30
-      - DATABASE_POOL_RECYCLE=1800
-      - DEFAULT_USER_EMAIL=user@example.com
-      - DEFAULT_USER_PASSWORD=some_random_admin_password
-      - DEFAULT_USER_FIRST_NAME=User
-      - DEFAULT_USER_LAST_NAME=Name
-      - DEFAULT_USER_ROLE=admin
-    volumes:
-      - openwebui_data:/app/backend/data
-    networks:
-      - my_network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    hostname: postgres
-    restart: unless-stopped
-    command: postgres -c shared_buffers=256MB -c work_mem=16MB -c maintenance_work_mem=128MB -c effective_cache_size=512MB -c max_connections=100
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=some_random_postgres_password
-      - POSTGRES_DB=postgres
-      - POSTGRES_MULTIPLE_DATABASES=langflow,linkwarden,n8n
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d
-    networks:
-      - my_network
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: qdrant
-    hostname: qdrant
-    environment:
-      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY:-some_random_qdrant_api_key}
-      - QDRANT__SERVICE__ENABLE_API_KEY_AUTHORIZATION=true
-    restart: unless-stopped
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - my_network
- redis:
-    image: redis:alpine
-    container_name: redis
-    hostname: redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-some_random_redis_password}
-    volumes:
-      - redis_data:/data
-    networks:
-      - my_network
-
-networks:
-  my_network:
-    external: true
-    name: my_network
-volumes:
-  openwebui_data:
-  postgres_data:
-  qdrant_data:
-  redis_data:
-```
-
-## Multiple Databases in PostgreSQL
-
-The `POSTGRES_MULTIPLE_DATABASES` environment variable is used to create multiple databases in the PostgreSQL container during initialization. This is useful if you want to use the same PostgreSQL instance for multiple applications.
-
- This requires a custom initialization script in the `./scripts/postgres-init` directory. A sample script is provided in this repository:
+在 `.env` 文件中设置 `DOCKER_NETWORK`(默认值为 `example_network`), 然后创建网络 (以默认值为例):
 
 ```bash
-# scripts/postgres-init/create-multiple-databases.sh
-#!/bin/bash
+docker network create example_network
+```
 
-set -e
-set -u
+### 2. 配置环境变量
 
-function create_user_and_database() {
-    local database=$1
-    echo "  Creating user and database '$database'"
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-        CREATE USER $database;
-        CREATE DATABASE $database;
-        GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
-EOSQL
+复制 `.env.example` 为 `.env` 并根据实际情况修改:
+
+```bash
+cp .env.example .env
+vim .env
+```
+
+### 3. 启动服务
+
+```bash
+docker-compose up -d
+```
+
+### 4. 访问 Open Web UI
+
+服务启动后, 访问 `http://<您的服务器IP>:8080`(或你在 `.env` 中配置的端口).
+
+---
+
+## 详细配置
+
+### 环境变量说明
+
+#### Docker 网络配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `DOCKER_NETWORK` | Docker 网络名称 | `example_network` |
+
+#### OpenWebUI 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `OPENWEBUI_PORT` | 外部访问端口 | `8080` |
+| `OPENWEBUI_SECRET_KEY` | 会话密钥(必填) | - |
+| `OPENWEBUI_IP` | 服务器 IP | `192.168.8.8` |
+| `OPENWEBUI_DATA_PATH` | 数据存储路径 | `/mnt/openwebui` |
+| `OPENWEBUI_NLTK_PATH` | NLTK 数据路径 | `/mnt/NLTK` |
+
+#### PostgreSQL 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `POSTGRES_USER` | 用户名 | `postgres` |
+| `POSTGRES_PASSWORD` | 密码(必填) | - |
+| `POSTGRES_DB` | 数据库名 | `postgres` |
+| `POSTGRES_DATA_PATH` | 数据存储路径 | `/mnt/postgres` |
+
+#### Qdrant 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `QDRANT_API_KEY` | API 密钥(必填) | - |
+| `QDRANT_DATA_PATH` | 数据存储路径 | `/mnt/qdrant` |
+
+#### Valkey 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `VALKEY_PASSWORD` | 密码(必填) | - |
+| `VALKEY_DATA_PATH` | 数据存储路径 | `/mnt/valkey` |
+
+#### vLLM 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `VLLM_IMAGE` | 镜像地址 | `vllm/vllm-openai:latest` |
+| `VLLM_API_KEY` | API 密钥(必填) | - |
+| `VLLM_MODEL_DIR_NAME` | 模型目录名称 | `Qwen3.5-35B` |
+| `VLLM_SERVED_MODEL_NAME` | 对外服务名称 | `Qwen3.5` |
+| `VLLM_MAX_MODEL_LEN` | 模型最大长度 | `256K` |
+| `VLLM_GPU_MEMORY_UTILIZATION` | GPU 内存利用率 | `0.9` |
+| `VLLM_GPU_DEVICE_ID` | GPU 设备 ID | `0` |
+
+> **注意**: vLLM 配置选项非常丰富. 详细参数说明请参阅 `.env.example` 文件.
+
+### MCP 服务桥接器 MCPO 配置
+
+MCPO 配置文件位于 `mcpo/config.json`, 支持配置多个 MCP 服务器:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time", "--local-timezone=Asia/Shanghai"]
+    }
+  }
 }
-
-if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
-    echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
-    for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
-        create_user_and_database $db
-    done
-    echo "Multiple databases created"
-fi
-
-# Create openwebui database if it doesn't exist in the list
-if [[ ! "$POSTGRES_MULTIPLE_DATABASES" =~ "openwebui" ]]; then
-    create_user_and_database "openwebui"
-    echo "OpenWebUI database created"
-fi
 ```
 
-Make sure to make this script executable:
+配置修改后会自动热加载(已启用 `--hot-reload`).
+
+### OpenWebUI 本地 LLM 推理配置
+
+在 OpenWebUI 管理界面中配置:
+
+1. 进入 **设置** → **外部连接** → **管理 OpenAI 接口连接**
+2. 添加 vLLM 连接: `http://vllm:5000/v1`
+
+### 获取 NLTK 数据
+
+OpenWebUI 在处理文本任务(如 RAG)时需要 NLTK 支持. 如果容器内自动下载失败, 可以手动下载并挂载到容器中.
+
+> **提示**: 完整的 NLTK 数据包列表请参阅 [NLTK 官方数据页面](https://www.nltk.org/nltk_data/) 和 [nltk_data GitHub 仓库](https://github.com/nltk/nltk_data).
+
+#### 根据报错手动下载
+
+如果遇到 NLTK 数据缺失错误, 容器日志会显示类似以下信息:
+
+```
+LookupError: 
+**********************************************************************
+  Resource punkt not found.
+  Please use the NLTK Downloader to obtain the resource:
+```
+
+根据报错提示中的资源名称, 使用以下命令下载:
 
 ```bash
-chmod +x scripts/postgres-init/create-multiple-databases.sh
+# 创建 NLTK 数据目录
+mkdir -p /mnt/NLTK
+
+# 下载指定的数据包
+python3 -c "
+import nltk
+import os
+
+os.environ['NLTK_DATA'] = '/mnt/NLTK'
+
+# 根据报错提示下载所需的数据包
+packages = ['punkt', 'punkt_tab', 'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng', 'stopwords']
+for pkg in packages:
+    try:
+        nltk.download(pkg, download_dir='/mnt/NLTK')
+        print(f'Downloaded: {pkg}')
+    except Exception as e:
+        print(f'Failed to download {pkg}: {e}')
+"
 ```
 
-## Network Configuration
+或者使用 NLTK 下载器交互式选择:
 
-The `my_network` network is defined as external, which means it should be created before running this docker-compose file. This allows multiple docker-compose stacks to communicate with each other on the same network.
-
-You can create the network with the following command:
 ```bash
-docker network create my_network
-```
-## .Env
-
-Then, make sure that you have the corresponding .env.
-
-```txt
-
-# PostgreSQL Configuration
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=some_random_postgres_password
-POSTGRES_DB=postgres
-
-# Qdrant Configuration
-QDRANT_API_KEY=some_random_qdrant_api_key
-QDRANT_PORT=6333
-
-# OpenWebUI Configuration
-OPENWEBUI_PORT=8080  # You can change this if you want to expose OpenWebUI on a different port
-REDIS_PASSWORD=some_random_redis_password
+python3 -c "import nltk; nltk.download()"
 ```
 
-## Running the Stack
+#### 手动下载(网页)
 
-To run the stack, follow these steps:
+如果网络环境无法直接通过 Python 下载, 可以从网页手动下载数据包:
 
-1. Create the external network (if it doesn't exist already):
-   ```bash
-   docker network create my_network
-   ```
+1. 访问 [NLTK Data 下载页面](https://github.com/nltk/nltk_data/tree/gh-pages/packages) 或 [NLTK 官方下载页面](https://www.nltk.org/nltk_data/)
+2. 根据需要的数据包类型, 下载对应的 zip 文件:
+   - **tokenizers**: 从 `tokenizers/` 目录下载, 如 `punkt.zip`、`punkt_tab.zip`
+   - **taggers**: 从 `taggers/` 目录下载, 如 `averaged_perceptron_tagger.zip`
+   - **corpora**: 从 `corpora/` 目录下载, 如 `stopwords.zip`
+3. 解压并将内容放入正确目录
 
-2. Copy the `.env.example` file to `.env` and customize the values as needed.
+##### 目录结构
 
-3. Start the stack:
-   ```bash
-   docker-compose up -d
-   ```
+下载完成后, 目录结构应如下:
 
-4. Access OpenWebUI at `http://localhost:8080` (or the port you specified in the `.env` file).
+```
+/mnt/NLTK/
+└── nltk_data/
+    ├── tokenizers/
+    │   ├── punkt/
+    │   │   └── ...
+    │   └── punkt_tab/
+    │       └── ...
+    ├── taggers/
+    │   ├── averaged_perceptron_tagger/
+    │   │   └── ...
+    │   └── averaged_perceptron_tagger_eng/
+    │       └── ...
+    └── corpora/
+        └── stopwords/
+            └── ...
+```
 
-## PostgreSQL Backup Advantages
+> **注意**: 下载的 zip 文件解压后, 需要确保子目录名称正确. 例如 `punkt.zip` 解压后应该是 `punkt/` 文件夹, 而不是额外的嵌套目录.
 
-One of the major advantages of switching from SQLite to PostgreSQL is the robust backup ecosystem. PostgreSQL offers several significant benefits for data protection.
- 
-### Automated Backup Script (Illustrative)
+#### 配置环境变量
 
-Here's a simple script you can use to automate daily backups of your PostgreSQL database:
+在 `.env` 文件中设置:
+
+```bash
+OPENWEBUI_NLTK_PATH=/mnt/NLTK
+```
+
+重启 OpenWebUI 容器后生效.
+
+---
+
+## 服务管理
+
+### 查看服务状态
+
+```bash
+docker-compose ps
+```
+
+### 查看日志
+
+```bash
+# 查看所有服务日志
+docker-compose logs -f
+
+# 查看特定服务日志
+docker-compose logs -f openwebui
+docker-compose logs -f vllm
+```
+
+### 重启服务
+
+```bash
+docker-compose restart openwebui
+```
+
+### 停止服务
+
+```bash
+docker-compose down
+```
+
+> **注意**: 使用 `down` 命令不会删除数据卷, 如需完全清理可使用 `docker-compose down -v`
+
+---
+
+## 备份与恢复
+
+### 自动备份脚本
+
+以下脚本可用于自动化 PostgreSQL 数据库的每日备份:
 
 ```bash
 #!/bin/bash
 
-# Configuration
+# 配置
 BACKUP_DIR="/path/to/backups"
 DB_NAME="openwebui"
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_FILE="$BACKUP_DIR/${DB_NAME}_backup_$TIMESTAMP.sql"
 
-# Create backup directory if it doesn't exist
+# 创建备份目录
 mkdir -p $BACKUP_DIR
 
-# For dockerized PostgreSQL
-docker exec -t postgres pg_dump -U postgres -d $DB_NAME > $BACKUP_FILE
+# 执行备份(Docker 化 PostgreSQL)
+docker exec -t openwebui-postgres pg_dump -U postgres -d $DB_NAME > $BACKUP_FILE
 
-# Compress the backup
+# 压缩备份
 gzip $BACKUP_FILE
 
-# Keep only the last 7 backups
+# 仅保留最近 7 个备份
 ls -t $BACKUP_DIR/${DB_NAME}_backup_*.sql.gz | tail -n +8 | xargs -r rm
 
 echo "Backup completed: $BACKUP_FILE.gz"
 ```
 
-For a non-dockerized PostgreSQL instance, simply replace the backup command with:
+设置每日定时任务:
 
 ```bash
-# For non-dockerized PostgreSQL
-PGPASSWORD=your_password pg_dump -h localhost -U postgres -d $DB_NAME > $BACKUP_FILE
-```
-
-To run this script daily, save it as `backup_postgres.sh`, make it executable with `chmod +x backup_postgres.sh`, and set up a cron job:
-
-```bash
-# Add to crontab (run 'crontab -e')
+chmod +x backup_postgres.sh
+crontab -e
+# 添加以下行(每天凌晨 2 点执行)
 0 2 * * * /path/to/backup_postgres.sh
 ```
 
-## AI Prompt
+### 恢复数据
 
-YAML is a finnicky language and there's nothing more annoying than failing to deploy a cool tech stack because you messed up one single line of indentation. 
+```bash
+# 解压备份文件
+gunzip backup_file.sql.gz
 
-Fortunately, LLMs are pretty good at fixing and drafting YAML. Ask it for help!
+# 恢复数据(Docker 化 PostgreSQL)
+docker exec -i openwebui-postgres psql -U postgres -d openwebui < backup_file.sql
+```
 
-You can try something like this:
+---
 
-`Generate a docker compose that will bring up a stack that includes: OpenWebUI, Postgres, Qdrant`
+## 常见问题
 
+### 1. 如何从官方单容器版本迁移？
+
+如果当前使用官方单容器版本(使用 SQLite), 需要执行数据迁移:
+
+1. 停止现有容器
+2. 配置本方案的 PostgreSQL 和 Qdrant
+3. 使用 taylorwilsdon 的[迁移工具](https://github.com/taylorwilsdon/open-webui-postgres-migration) 将数据从 SQLite 迁移到 PostgreSQL
+
+### 2. WebSocket 连接失败？
+
+检查以下配置:
+
+- Valkey 服务是否正常运行
+- `ENABLE_WEBSOCKET_SUPPORT` 是否设为 `true`
+- `WEBSOCKET_MANAGER` 是否设为 `valkey`
+- 反向代理是否支持 WebSocket
+
+### 3. vLLM 无法启动？
+
+- 确认 NVIDIA Driver 版本 >= 535
+- 检查 GPU 显存是否充足
+- 确认模型文件路径正确
+
+### 4. Playwright 工具无法使用？
+
+- 确认 `PLAYWRIGHT_VERSION` 与 OpenWebUI 中的版本一致
+- 可使用 `scripts/get-playwright-version.sh` 获取正确版本
+
+### 5. NLTK 数据缺失？
+
+- 参阅本文档「获取 NLTK 数据」章节
+- 检查容器日志中的具体报错信息, 根据提示下载对应数据包
+
+### 6. 如何禁用不需要的服务？
+
+如果不需要 vLLM, 可以在 `docker-compose.yml` 中注释掉 vllm 服务块. OpenWebUI 仍可正常工作, 只是无法使用本地 LLM 推理. 其他服务同理.
+
+---
+
+## 相关链接
+
+- [Open Web UI 官方文档](https://docs.openwebui.com/)
+- [Open Web UI 环境变量配置](https://docs.openwebui.com/getting-started/env-configuration/)
+- [vLLM 文档](https://docs.vllm.ai/)
+- [PostgreSQL 备份文档](https://www.postgresql.org/docs/current/backup.html)
+- [Docker Compose 文档](https://docs.docker.com/compose/)
+
+---
+
+## 更新日志
+
+详细更新日志请参阅 [CHANGELOG.md](./CHANGELOG.md).
