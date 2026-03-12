@@ -1,4 +1,4 @@
-# OPQMTTMPV Stack - Open Web UI 私有化通用部署方案
+# PORT-PUMQTV Stack - Open Web UI 私有化通用部署方案
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -7,20 +7,21 @@
 
 本项目提供基于 Docker Compose 的 Open Web UI 私有部署方案, 采用模块化架构, 包含完整的生产级组件.
 
-## 组件介绍
+## 项目介绍
 
-本方案使用 OPQMTTMPV 容器栈:
+原项目采用了 [`OPQ Stack`](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 的称呼, 因此本项目沿用该规律, 使用 PORT-PUMQTV (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive") 称呼这套容器栈:
 
 | 字母 | 组件 | 说明 |
 |------|------|------|
-| **O** | [Open Web UI](https://github.com/open-webui/open-webui) | 主容器, 提供 Web 界面 |
 | **P** | [PostgreSQL](https://www.postgresql.org/) | 主数据库, 替换 SQLite |
-| **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
-| **M** | [MCPO](https://github.com/open-webui/mcpo) | 官方 MCP 桥接器, 将 MCP 服务器转换为 OpenAI 兼容 API |
+| **O** | [Open Web UI](https://github.com/open-webui/open-webui) | 主容器, 提供 Web 界面 |
+| **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
 | **T** | [Apache Tika](https://github.com/apache/tika) | 文档提取器 |
-| **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
 | **P** | [Playwright](https://github.com/microsoft/playwright) | 无头浏览器, 用于网页访问 |
-| **V** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
+| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | OpenWebUI 内置 |
+| **M** | [MCPO](https://github.com/open-webui/mcpo) | 官方 MCP 桥接器, 将 MCP 服务器转换为 OpenAI 兼容 API |
+| **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
+| **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
 | **V** | [vLLM](https://github.com/vllm-project/vllm) | 高性能 LLM 后端(可选) |
 
 > **提示**: vLLM 为可选服务, 如不需要可禁用. 如需替换其他组件, 可自由组合:
