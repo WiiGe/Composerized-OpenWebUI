@@ -284,8 +284,8 @@ docker-compose ps
 docker-compose logs -f
 
 # 查看特定服务日志
-docker-compose logs -f openwebui
-docker-compose logs -f vllm
+docker-compose logs -f openwebui-app
+docker-compose logs -f openwebui-vllm
 ```
 
 ### 重启服务
