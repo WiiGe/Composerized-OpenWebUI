@@ -1,6 +1,6 @@
 # Composerized-OpenWebUI - Open Web UI Private Deployment Solution
 
-> **中文版本**: [Chinese](./README.md)
+> **中文版本**: [中文 README](./README.md)
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -11,7 +11,7 @@ This project provides a Docker Compose-based private deployment solution for Ope
 
 ## Introduction
 
-Following the naming convention of the original [`OPQ Stack`](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant), this project uses **PORT-PUMQTV** (/pɔːrt/ /ˈpʌŋktɪv/) to refer to this container stack:
+The [original project](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) used the `OPQ Stack` naming convention, so this project follows the same pattern and uses **PORT-PUMQTV** (/pɔːrt/ /ˈpʌŋktɪv/) to refer to this container stack:
 
 | Letter | Component | Description |
 |--------|-----------|-------------|
@@ -20,7 +20,7 @@ Following the naming convention of the original [`OPQ Stack`](https://github.com
 | **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis community fork, for caching and WebSocket support |
 | **T** | [Apache Tika](https://github.com/apache/tika) | Document extractor |
 | **P** | [Playwright](https://github.com/microsoft/playwright) | Headless browser, for web access |
-| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | Built into OpenWebUI |
+| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | Built into OpenWebUI, note here for adding a vowel letter to the stack name |
 | **M** | [MCPO](https://github.com/open-webui/mcpo) | Official MCP bridge, converts MCP servers to OpenAI-compatible APIs |
 | **Q** | [Qdrant](https://github.com/qdrant/qdrant) | Vector database, for RAG |
 | **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | Official terminal component |

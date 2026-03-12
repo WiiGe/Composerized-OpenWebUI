@@ -1,6 +1,6 @@
 # Composerized-OpenWebUI - Open Web UI 私有化通用部署方案
 
-> **English Version**: [English](./README-en.md)
+> **English README**: [English README](./README-en.md)
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -11,7 +11,7 @@
 
 ## 项目介绍
 
-[原项目](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 采用了 `OPQ Stack` 的称呼, 因此本项目沿用该规律, 使用 `PORT-PUMQTV` (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive") 称呼这套容器栈:
+[原项目](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 采用了 `OPQ Stack` 的称呼, 因此本项目沿用该规律, 使用 `PORT-PUMQTV` (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive", 为了硬凹这名称抠了很久头) 称呼这套容器栈:
 
 | 字母 | 组件 | 说明 |
 |------|------|------|
@@ -20,7 +20,7 @@
 | **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
 | **T** | [Apache Tika](https://github.com/apache/tika) | 文档提取器 |
 | **P** | [Playwright](https://github.com/microsoft/playwright) | 无头浏览器, 用于网页访问 |
-| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | OpenWebUI 内置 |
+| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | OpenWebUI 内置, 标出来是为了给项目名称凑个元音字母 |
 | **M** | [MCPO](https://github.com/open-webui/mcpo) | 官方 MCP 桥接器, 将 MCP 服务器转换为 OpenAI 兼容 API |
 | **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
 | **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
