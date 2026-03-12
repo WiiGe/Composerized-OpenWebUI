@@ -156,12 +156,24 @@ MCPO 配置文件位于 `mcpo/config.json`, 支持配置多个 MCP 服务器:
 
 配置修改后会自动热加载(已启用 `--hot-reload`).
 
-### OpenWebUI 本地 LLM 推理配置
+### 在 OpenWebUI 添加 MCP 工具
 
 在 OpenWebUI 管理界面中配置:
 
-1. 进入 **设置** → **外部连接** → **管理 OpenAI 接口连接**
-2. 添加 vLLM 连接: `http://vllm:5000/v1`
+1. 进入管理员面板 **设置** → **外部连接** → **管理工具服务器**
+2. 点击 `+` 添加工具服务器连接(以 `time` 为例):
+    - 名称: `time-MCPO`
+    - URL: `http://mcpo:8000/time`
+    - 密钥: `你在.env中设置的MCPO_API_KEY`
+
+### OpenWebUI 本地 vLLM 推理配置
+
+在 OpenWebUI 管理界面中配置:
+
+1. 进入管理员面板 **设置** → **扩展功能** → **管理 OpenAI 接口连接**
+2. 点击 `+` 添加 vLLM OpenAI 兼容 API 连接:
+    - URL: `http://vllm:5000/v1`
+    - 密钥: `你在.env中设置的VLLM_API_KEY`
 
 ### 获取 NLTK 数据
 
