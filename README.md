@@ -47,7 +47,7 @@
 | Open Terminal | 终端访问 | 注释 open-terminal 服务 |
 | Tika | 文档提取 | 注释 tika 服务 |
 
-## 快速开始
+## TL;DR
 
 ### 1. 创建 Docker 网络
 
