@@ -1,4 +1,4 @@
-# PORT-PUMQTV Stack - Open Web UI 私有化通用部署方案
+# Composerized-OpenWebUI - Open Web UI 私有化通用部署方案
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
