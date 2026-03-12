@@ -1,5 +1,7 @@
 # Composerized-OpenWebUI - Open Web UI 私有化通用部署方案
 
+> **English Version**: [English](./README-en.md)
+
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Latest-blue)](https://qdrant.tech/)
@@ -9,7 +11,7 @@
 
 ## 项目介绍
 
-原项目采用了 [`OPQ Stack`](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 的称呼, 因此本项目沿用该规律, 使用 PORT-PUMQTV (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive") 称呼这套容器栈:
+[原项目](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 采用了 `OPQ Stack` 的称呼, 因此本项目沿用该规律, 使用 `PORT-PUMQTV` (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive") 称呼这套容器栈:
 
 | 字母 | 组件 | 说明 |
 |------|------|------|
