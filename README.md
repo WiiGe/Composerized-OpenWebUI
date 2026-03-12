@@ -30,7 +30,7 @@
 >
 > - LLM本地后端: 可使用 [Ollama](https://ollama.com/) 或 [SGLang](https://github.com/sgl-project/sglang) 或 [llama.cpp](https://github.com/ggml-org/llama.cpp) 来替代 vLLM
 > - 文档提取: 可使用 [MinerU](https://github.com/opendatalab/MinerU) 或 [docling](https://github.com/docling-project/docling) 替代 Tika
-> - 浏览器工具: 可使用 [playwright-MCP](https://github.com/microsoft/playwright-mcp) 或 [browserless](https://github.com/browserless/browserless) 或 替代 Playwright
+> - 浏览器工具: 可使用 [playwright-MCP](https://github.com/microsoft/playwright-mcp) 或 [browserless](https://github.com/browserless/browserless) 或 [HeadlessBrowsers 列表](https://github.com/dhamaniasad/HeadlessBrowsers) 中的组件替代 Playwright
 
 ## 前置要求
 
