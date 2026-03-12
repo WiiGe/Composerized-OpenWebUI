@@ -42,10 +42,10 @@
 | 服务 | 用途 | 禁用方式 |
 |------|------|----------|
 | vLLM | 本地 LLM 推理 | 注释 `docker-compose.yml` 中的 vllm 服务 |
-| MCPO | MCP 工具桥接 | 注释 mcpo 服务 |
-| Playwright | 网页访问工具 | 注释 playwright 服务 |
-| Open Terminal | 终端访问 | 注释 open-terminal 服务 |
-| Tika | 文档提取 | 注释 tika 服务 |
+| MCPO | MCP 工具桥接 | 注释 `mcpo` 服务 |
+| Playwright | 网页访问工具 | 注释 `playwright` 服务 |
+| Open Terminal | 终端访问 | 注释 `open-terminal` 服务 |
+| Tika | 文档提取 | 注释 `tika` 服务 |
 
 ## TL;DR
 
@@ -391,8 +391,6 @@ docker exec -i openwebui-postgres psql -U postgres -d openwebui < backup_file.sq
 
 如果不需要 vLLM, 可以在 `docker-compose.yml` 中注释掉 vllm 服务块. OpenWebUI 仍可正常工作, 只是无法使用本地 LLM 推理. 其他服务同理.
 
----
-
 ## 相关链接
 
 - [Open Web UI 官方文档](https://docs.openwebui.com/)
@@ -406,3 +404,21 @@ docker exec -i openwebui-postgres psql -U postgres -d openwebui < backup_file.sq
 ## 更新日志
 
 详细更新日志请参阅 [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
+## 致谢
+
+本项目基于以下优秀的开源项目, 感谢所有作者与贡献者的辛勤付出:
+
+- [Open Web UI](https://github.com/open-webui/open-webui) - 开源 AI 助手前端
+- [PostgreSQL](https://www.postgresql.org/) - 世界最先进的开源关系型数据库
+- [Qdrant](https://github.com/qdrant/qdrant) - 高性能向量数据库
+- [vLLM](https://github.com/vllm-project/vllm) - 高性能 LLM 推理引擎
+- [Valkey](https://github.com/valkey-io/valkey) - Redis 分支, 高性能内存数据库
+- [Apache Tika](https://github.com/apache/tika) - 文档内容提取
+- [Playwright](https://github.com/microsoft/playwright) - 浏览器自动化
+- [MCPO](https://github.com/open-webui/mcpo) - MCP 到 OpenAI 协议桥接
+- [Open Terminal](https://github.com/open-webui/open-terminal) - 终端访问组件
+
+---
