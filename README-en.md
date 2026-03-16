@@ -1,11 +1,17 @@
-# Composerized-OpenWebUI - Open Web UI Private Deployment Solution
+# Composerized-OpenWebUI - OpenWebUI Self-Host Stack
 
-> **中文版本**: [中文 README](./README.md)
+> **中文版本**: [自述文件](./README.md)
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Qdrant](https://img.shields.io/badge/Qdrant-Latest-blue)](https://qdrant.tech/)
-[![vLLM](https://img.shields.io/badge/vLLM-High--Performance-orange)](https://docs.vllm.ai/)
+[![OpenWebUI](https://img.shields.io/badge/OpenWebUI-Web_UI-01B155?logo=openai&logoColor=white)](https://openwebui.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Relational_DB-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Valkey](https://img.shields.io/badge/Valkey-Redis--Fork-DC382D?logo=redis&logoColor=white)](https://valkey.io/)
+[![Apache Tika](https://img.shields.io/badge/Apache_Tika-Document_Extractor-F44D27)](https://tika.apache.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-Browser_Automation-2EAD33?logo=microsoft&logoColor=white)](https://playwright.dev/)
+[![MCPO](https://img.shields.io/badge/MCPO-MCP_Bridge-FF6C37)](https://github.com/open-webui/mcpo)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-336791?logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Open_Terminal](https://img.shields.io/badge/Open_Terminal-Terminal_Access-4CAF50)](https://github.com/open-webui/open-terminal)
+[![vLLM](https://img.shields.io/badge/vLLM-High--Performance-FF6C00)](https://docs.vllm.ai/)
 
 This project provides a Docker Compose-based private deployment solution for Open Web UI, featuring a modular architecture with production-grade components.
 
@@ -410,6 +416,12 @@ See [CHANGELOG.md](./CHANGELOG.md) for detailed changelog.
 
 ---
 
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+---
+
 ## Acknowledgments
 
 This project is based on the following excellent open-source projects, thanks to all authors and contributors:
@@ -423,5 +435,3 @@ This project is based on the following excellent open-source projects, thanks to
 - [Playwright](https://github.com/microsoft/playwright) - Browser Automation
 - [MCPO](https://github.com/open-webui/mcpo) - MCP to OpenAI Protocol Bridge
 - [Open Terminal](https://github.com/open-webui/open-terminal) - Terminal Access Component
-
----

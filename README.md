@@ -1,11 +1,17 @@
-# Composerized-OpenWebUI - Open Web UI 私有化通用部署方案
+# Composerized-OpenWebUI - OpenWebUI 私有化通用部署方案
 
-> **English README**: [English README](./README-en.md)
+> **English Version**: [README](./README-en.md)
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/openwebui/open-webui)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Qdrant](https://img.shields.io/badge/Qdrant-Latest-blue)](https://qdrant.tech/)
-[![vLLM](https://img.shields.io/badge/vLLM-High--Performance-orange)](https://docs.vllm.ai/)
+[![OpenWebUI](https://img.shields.io/badge/OpenWebUI-Web_UI-01B155?logo=openai&logoColor=white)](https://openwebui.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Relational_DB-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Valkey](https://img.shields.io/badge/Valkey-Redis--Fork-DC382D?logo=redis&logoColor=white)](https://valkey.io/)
+[![Apache Tika](https://img.shields.io/badge/Apache_Tika-Document_Extractor-F44D27)](https://tika.apache.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-Browser_Automation-2EAD33?logo=microsoft&logoColor=white)](https://playwright.dev/)
+[![MCPO](https://img.shields.io/badge/MCPO-MCP_Bridge-FF6C37)](https://github.com/open-webui/mcpo)
+[![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-336791?logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Open_Terminal](https://img.shields.io/badge/Open_Terminal-Terminal_Access-4CAF50)](https://github.com/open-webui/open-terminal)
+[![vLLM](https://img.shields.io/badge/vLLM-High--Performance-FF6C00)](https://docs.vllm.ai/)
 
 本项目提供基于 Docker Compose 的 Open Web UI 私有部署方案, 采用模块化架构, 包含完整的生产级组件.
 
@@ -410,6 +416,12 @@ docker exec -i openwebui-postgres psql -U postgres -d openwebui < backup_file.sq
 
 ---
 
+## 许可证
+
+本项目基于 [MIT 许可证](./LICENSE) 开源。
+
+---
+
 ## 致谢
 
 本项目基于以下优秀的开源项目, 感谢所有作者与贡献者的辛勤付出:
@@ -423,5 +435,3 @@ docker exec -i openwebui-postgres psql -U postgres -d openwebui < backup_file.sq
 - [Playwright](https://github.com/microsoft/playwright) - 浏览器自动化
 - [MCPO](https://github.com/open-webui/mcpo) - MCP 到 OpenAI 协议桥接
 - [Open Terminal](https://github.com/open-webui/open-terminal) - 终端访问组件
-
----
