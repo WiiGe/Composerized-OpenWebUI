@@ -86,6 +86,25 @@ services:
       - ${OPENTERMINAL_WORKING_PATH:-/mnt/terminal}:/home/user
     environment:
       - OPEN_TERMINAL_API_KEY=${OPENTERMINAL_API_KEY:-random_terminal_api_key}
+
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    container_name: openwebui-crawl4ai
+    restart: unless-stopped
+    shm_size: 4g
+    environment:
+      - ENV_FILE=./.llm.env
+    # volumes:
+    #   - ./config.yml:/app/config.yml:ro
+    #   - ./logs:/app/logs
+    networks:
+      - openwebui-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   mcpo:
     container_name: openwebui-mcpo
     image: ghcr.io/open-webui/mcpo:main

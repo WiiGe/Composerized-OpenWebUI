@@ -13,6 +13,10 @@
         "mcp-server-time",
         "--local-timezone=Asia/Shanghai"
       ]
+    },
+    "crawl4ai-sse": {
+      "type": "sse",
+      "url": "http://crawl4ai:11235/mcp/sse"
     }
   }
 }
