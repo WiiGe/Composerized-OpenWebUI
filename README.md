@@ -19,22 +19,25 @@
 
 ## 项目介绍
 
-[原项目](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 采用了 `OPQ Stack` 的称呼, 因此本项目沿用该规律, 使用 `PORT-PUMQTV` (/pɔːrt/ /ˈpʌŋktɪv/, 读音接近 "port punktive", 为了硬凹这名称抠了很久头) 称呼这套容器栈:
+[原项目](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) 采用了 `OPQ Stack` 的称呼, 因此本项目沿用该规律, 使用 `POST-CRUMQPTV` (/poʊst krʌmptɪv/, 读音接近 "post crumptive", 为了硬凹这名称抠了很久头) 称呼这套容器栈:
 
 | 字母 | 组件 | 说明 |
 |------|------|------|
 | **P** | [PostgreSQL](https://www.postgresql.org/) | 主数据库, 替换 SQLite |
 | **O** | [Open Web UI](https://github.com/open-webui/open-webui) | 主容器, 提供 Web 界面 |
-| **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
+| **S** | [SearXNG](https://github.com/searxng/searxng) | 聚合搜索引擎, 提供 Web Search 后端 |
 | **T** | [Apache Tika](https://github.com/apache/tika) | 文档提取器 |
-| **P** | [Playwright](https://github.com/microsoft/playwright) | 无头浏览器, 用于网页访问 |
+| — | | |
+| **C** | [Crawl4AI](https://github.com/unclecode/crawl4ai) + [crawl4ai-proxy](https://github.com/lennyerik/crawl4ai-proxy) | AI 驱动网页爬取 |
+| **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis 社区实现, 用于缓存和 WebSocket 支持 |
 | **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | OpenWebUI 内置, 标出来是为了给项目名称凑个元音字母 |
 | **M** | [MCPO](https://github.com/open-webui/mcpo) | 官方 MCP 桥接器, 将 MCP 服务器转换为 OpenAI 兼容 API |
 | **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
+| **P** | [Playwright](https://github.com/microsoft/playwright) | 无头浏览器, 用于网页访问 |
 | **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
 | **V** | [vLLM](https://github.com/vllm-project/vllm) | 高性能 LLM 后端(可选) |
-| **S** | [SearXNG](https://github.com/searxng/searxng) | 聚合搜索引擎 (Web Search) |
-| **C** | [Crawl4AI](https://github.com/unclecode/crawl4ai) | AI 驱动的网页爬虫 |
+
+> **命名字母表**: `P`-ostgres `O`-penWebUI `S`-earXNG `T`-ika — `C`-rawl4AI `R`-edis(Valkey) `U`-nstructured `M`-CPO `Q`-drant `P`-laywright `T`-erminal `V`-LLM
 
 > **提示**: vLLM 为可选服务, 如不需要可禁用. 如需替换其他组件, 可自由组合:
 >

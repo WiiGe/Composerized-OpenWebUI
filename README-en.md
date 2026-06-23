@@ -17,20 +17,25 @@ This project provides a Docker Compose-based private deployment solution for Ope
 
 ## Introduction
 
-The [original project](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) used the `OPQ Stack` naming convention, so this project follows the same pattern and uses **PORT-PUMQTV** (/pɔːrt/ /ˈpʌŋktɪv/) to refer to this container stack:
+The [original project](https://github.com/danielrosehill/OpenWebUI-Postgres-Qdrant) used the `OPQ Stack` naming convention, so this project follows the same pattern and uses **POST-CRUMQPTV** (/poʊst krʌmptɪv/, pronounced "post crumptive") to refer to this container stack:
 
 | Letter | Component | Description |
 |--------|-----------|-------------|
 | **P** | [PostgreSQL](https://www.postgresql.org/) | Primary database, replacing SQLite |
 | **O** | [Open Web UI](https://github.com/open-webui/open-webui) | Main container, providing Web UI |
-| **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis community fork, for caching and WebSocket support |
+| **S** | [SearXNG](https://github.com/searxng/searxng) | Privacy-respecting metasearch engine, for Web Search backend |
 | **T** | [Apache Tika](https://github.com/apache/tika) | Document extractor |
-| **P** | [Playwright](https://github.com/microsoft/playwright) | Headless browser, for web access |
-| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | Built into OpenWebUI, note here for adding a vowel letter to the stack name |
+| — | | |
+| **C** | [Crawl4AI](https://github.com/unclecode/crawl4ai) + [crawl4ai-proxy](https://github.com/lennyerik/crawl4ai-proxy) | AI-powered web crawling |
+| **R** | [Valkey](https://github.com/valkey-io/valkey) | Redis community fork, for caching and WebSocket support |
+| **U** | [Unstructured](https://github.com/Unstructured-IO/unstructured) | Built into OpenWebUI, included for that sweet vowel letter |
 | **M** | [MCPO](https://github.com/open-webui/mcpo) | Official MCP bridge, converts MCP servers to OpenAI-compatible APIs |
 | **Q** | [Qdrant](https://github.com/qdrant/qdrant) | Vector database, for RAG |
+| **P** | [Playwright](https://github.com/microsoft/playwright) | Headless browser, for web access |
 | **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | Official terminal component |
 | **V** | [vLLM](https://github.com/vllm-project/vllm) | High-performance LLM backend (optional) |
+
+> **Acronym legend**: `P`-ostgres `O`-penWebUI `S`-earXNG `T`-ika — `C`-rawl4AI `R`-edis(Valkey) `U`-nstructured `M`-CPO `Q`-drant `P`-laywright `T`-erminal `V`-LLM
 
 > **Tip**: vLLM is optional. If not needed, it can be disabled. Other components can also be freely replaced:
 >
