@@ -1,0 +1,21 @@
+use_default_settings: true
+general:
+  instance_name: "OpenWebUI Search"
+  debug: false
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json
+server:
+  secret_key: "change-me-to-random-string"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: false
+  image_proxy: false
+ui:
+  static_use_hash: true
+# Redis 可选 — 用于限流和缓存。如需启用，取消注释并填入实际密码:
+# redis:
+#   url: redis://default:your_redis_password@valkey:6379

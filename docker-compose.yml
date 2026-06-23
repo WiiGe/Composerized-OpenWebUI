@@ -54,10 +54,35 @@ services:
       - ${DOCKER_NETWORK:-example_network}
     healthcheck:
       # 请见 https://valkey.io/topics/cli/
-      test: ["CMD", "valkey-cli", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-random_valkey_password}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: openwebui-searxng
+    restart: unless-stopped
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    volumes:
+      - ./searxng:/etc/searxng
+      - ${SEARXNG_DATA_PATH:-/mnt/searxng}:/var/cache/searxng
+    environment:
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:-change-me-to-random-string}
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/search?format=json&q=test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   playwright:
     # 版本必须要与 OpenWebUI 中的 PLAYWRIGHT_VERSION 环境变量一致，否则可能会因连接失败而导致工具无法正常工作
@@ -66,15 +91,27 @@ services:
     image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-1.58.0}-${PLAYWRIGHT_DISTRO:-noble}
     container_name: openwebui-playwright
     command: npx -y playwright@${PLAYWRIGHT_VERSION:-1.58.0} run-server --port 3000 --host 0.0.0.0
+    restart: unless-stopped
+    ipc: host
+    shm_size: '4gb'
     networks:
       - ${DOCKER_NETWORK:-example_network}
 
   tika:
     image: apache/tika:latest-full
     container_name: openwebui-tika
+    environment:
+      - JAVA_OPTS=-Xmx4g
+    command: -c /tika-config.xml
+    volumes:
+      - ./tika/tika-config.xml:/tika-config.xml
     networks:
       - ${DOCKER_NETWORK:-example_network}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 12G
 
   open-terminal:
     image: ghcr.io/open-webui/open-terminal
@@ -91,19 +128,43 @@ services:
     image: unclecode/crawl4ai:latest
     container_name: openwebui-crawl4ai
     restart: unless-stopped
-    shm_size: 4g
+    shm_size: 8g
     environment:
-      - ENV_FILE=./.llm.env
+      - ENV_FILE=./crawl4ai/.llm.env
     # volumes:
     #   - ./config.yml:/app/config.yml:ro
     #   - ./logs:/app/logs
     networks:
-      - openwebui-network
+      - ${DOCKER_NETWORK:-example_network}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11235/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # openai-edge-tts:
+  #   image: travisvn/openai-edge-tts:latest
+  #   restart: unless-stopped
+  #   container_name: openwebui-openai-edge-tts
+  #   networks:
+  #     - ${DOCKER_NETWORK:-example_network}
+  #   # 5050 default
+  #   # https://docs.openwebui.com/tutorials/text-to-speech/openai-edge-tts-integration
+  #   ports:
+  #     - "13050:5050"
+
+  crawl4ai-proxy:
+    image: ghcr.io/lennyerik/crawl4ai-proxy:latest
+    container_name: openwebui-crawl4ai-proxy
+    restart: unless-stopped
+    environment:
+      - LISTEN_PORT=8000
+      - CRAWL4AI_ENDPOINT=http://crawl4ai:11235/crawl
+    networks:
+      - ${DOCKER_NETWORK:-example_network}
+    depends_on:
+      crawl4ai:
+        condition: service_started
 
   mcpo:
     container_name: openwebui-mcpo
@@ -196,7 +257,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-random_postgres_password}@postgres:5432/${POSTGRES_DB:-postgres}
       # 向量数据库配置
       - VECTOR_DB=${VECTOR_DB:-qdrant}
-      - QDRANT_URI=http://qdrant:6333
+      - QDRANT_URI=http://qdrant:${QDRANT_PORT:-6333}
       - QDRANT_API_KEY=${QDRANT_API_KEY:-random_qdrant_api_key}
       # Redis 配置 - 用于缓存和 WebSocket 支持
       - REDIS_URL=redis://default:${VALKEY_PASSWORD:-random_valkey_password}@valkey:6379
@@ -216,7 +277,7 @@ services:
       # CORS 配置 - 对 WebSocket 功能至关重要
       # 请在 CORS_ALLOW_ORIGIN 中添加全部可访问的实例地址
       # 详见 https://docs.openwebui.com/reference/env-configuration/#cors_allow_origin
-      - CORS_ALLOW_ORIGIN=http://${OPENWEBUI_IP}:${OPENWEBUI_PORT},https://${OPENWEBUI_DOMAIN}
+      - CORS_ALLOW_ORIGIN=http://${OPENWEBUI_IP}:${OPENWEBUI_PORT};https://${OPENWEBUI_DOMAIN}
       # 使用 Hugging Face 镜像
       - HF_ENDPOINT=https://hf-mirror.com
       - WHISPER_MODEL_AUTO_UPDATE=true
@@ -234,10 +295,23 @@ services:
       # 日志设置
       - RAG_LOG_LEVEL=NOTSET
       - AUDIO_LOG_LEVEL=NOTSET
-      - GLOBAL_LOG_LEVEL=DEBUG
+      - GLOBAL_LOG_LEVEL=INFO
       # 工具服务配置
-      - WEB_LOADER_ENGINE=playwright
+      # Web Loader: 使用 crawl4ai-proxy 替代 playwright
+      # crawl4ai-proxy 翻译 OpenWebUI 外部加载器请求到 crawl4ai 格式，速度更快
+      - WEB_LOADER_ENGINE=external
+      - EXTERNAL_WEB_LOADER_URL=http://crawl4ai-proxy:8000/crawl
+      - EXTERNAL_WEB_LOADER_API_KEY=not-needed
+      # 保留 playwright 以备不时之需（如需切回，将 WEB_LOADER_ENGINE 改回 playwright）
       - PLAYWRIGHT_WS_URL=ws://playwright:3000
+      - PLAYWRIGHT_TIMEOUT=120000
+      - WEB_LOADER_RETRY_DELAY=1000
+      - WEB_LOADER_RETRY_COUNT=3
+      # 网页搜索
+      - ENABLE_WEB_SEARCH=true
+      - WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>&format=json
+      # MCP / 其他工具
       - MCP_SERVERS=http://mcpo:8000
       - TIKA_SERVER_URL=http://tika:9998
       - OPEN_TERMINAL_URL=http://open-terminal:8000

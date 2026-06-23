@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+  <parsers>
+    <!-- PDF 解析器 -->
+    <parser class="org.apache.tika.parser.pdf.PDFParser">
+      <params>
+        <param name="extractAnnotationText" type="bool">true</param>
+        <param name="enableAutoSpace" type="bool">true</param>
+        <param name="sortByPosition" type="bool">true</param>
+      </params>
+    </parser>
+  </parsers>
+
+  <!-- OCR 配置 (需要 tika-parser-ocr 模块) -->
+  <!--
+  <parser class="org.apache.tika.parser.ocr.TesseractOCRParser">
+    <params>
+      <param name="language" type="string">chi_sim+eng</param>
+      <param name="timeout" type="int">300</param>
+      <param name="enableImageProcessing" type="int">1</param>
+    </params>
+  </parser>
+  -->
+</properties>

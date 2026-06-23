@@ -12,6 +12,8 @@
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-336791?logo=qdrant&logoColor=white)](https://qdrant.tech/)
 [![Open_Terminal](https://img.shields.io/badge/Open_Terminal-Terminal_Access-4CAF50)](https://github.com/open-webui/open-terminal)
 [![vLLM](https://img.shields.io/badge/vLLM-High--Performance-FF6C00)](https://docs.vllm.ai/)
+[![SearXNG](https://img.shields.io/badge/SearXNG-Web_Search-00B4D8)](https://docs.searxng.org/)
+[![Crawl4AI](https://img.shields.io/badge/Crawl4AI-Web_Crawler-0A0A0A)](https://crawl4ai.com/)
 
 本项目提供基于 Docker Compose 的 Open Web UI 私有部署方案, 采用模块化架构, 包含完整的生产级组件.
 
@@ -31,6 +33,8 @@
 | **Q** | [Qdrant](https://github.com/qdrant/qdrant) | 向量数据库, 用于 RAG |
 | **T** | [Open Terminal](https://github.com/open-webui/open-terminal) | 官方终端组件 |
 | **V** | [vLLM](https://github.com/vllm-project/vllm) | 高性能 LLM 后端(可选) |
+| **S** | [SearXNG](https://github.com/searxng/searxng) | 聚合搜索引擎 (Web Search) |
+| **C** | [Crawl4AI](https://github.com/unclecode/crawl4ai) | AI 驱动的网页爬虫 |
 
 > **提示**: vLLM 为可选服务, 如不需要可禁用. 如需替换其他组件, 可自由组合:
 >
@@ -55,6 +59,9 @@
 | Playwright | 网页访问工具 | 注释 `playwright` 服务 |
 | Open Terminal | 终端访问 | 注释 `open-terminal` 服务 |
 | Tika | 文档提取 | 注释 `tika` 服务 |
+| SearXNG | 网页搜索 | 注释 `searxng` 服务 |
+| Crawl4AI | 网页爬取 | 注释 `crawl4ai` 和 `crawl4ai-proxy` 服务 |
+| openai-edge-tts | 文字转语音 | 取消注释 `openai-edge-tts` 服务 (默认禁用) |
 
 ## TL;DR
 
@@ -120,6 +127,7 @@ docker-compose up -d
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
+| `QDRANT_PORT` | Qdrant 服务端口 | `6333` |
 | `QDRANT_API_KEY` | API 密钥(必填) | - |
 | `QDRANT_DATA_PATH` | 数据存储路径 | `/mnt/qdrant` |
 
@@ -144,6 +152,32 @@ docker-compose up -d
 
 > **注意**: vLLM 配置选项非常丰富. 详细参数说明请参阅 `.env.example` 文件.
 
+#### SearXNG 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `SEARXNG_SECRET_KEY` | 搜索引擎密钥(必填) | - |
+| `SEARXNG_DATA_PATH` | 缓存数据路径 | `/mnt/searxng` |
+
+> SearXNG 配置文件位于 `searxng/settings.yml`，详情参阅 [SearXNG 文档](https://docs.searxng.org/).
+
+#### Crawl4AI 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `Crawl4AI 的 LLM 配置` | 见 `crawl4ai/.llm.env` | - |
+
+> Crawl4AI 的 LLM API Key 和模型地址在 `crawl4ai/.llm.env` 中配置.
+
+#### Playwright 配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `PLAYWRIGHT_VERSION` | Playwright 版本 | `1.58.0` |
+| `PLAYWRIGHT_DISTRO` | 镜像发行版后缀 | `noble` |
+
+> 版本必须与 OpenWebUI 镜像中的 Playwright 一致. 可使用 `scripts/get-playwright-version.sh` 自动检测.
+
 ### MCP 服务桥接器 MCPO 配置
 
 MCPO 配置文件位于 `mcpo/config.json`, 支持配置多个 MCP 服务器:
@@ -164,6 +198,16 @@ MCPO 配置文件位于 `mcpo/config.json`, 支持配置多个 MCP 服务器:
 ```
 
 配置修改后会自动热加载(已启用 `--hot-reload`).
+
+### 社区工具 (Community Tools)
+
+本项目预置了 SearXNG + Crawl4AI 基础设施，推荐安装以下社区工具来串联搜索→爬取→LLM 提取的完整管道:
+
+| 工具 | 安装方式 | 指南 |
+|---|---|---|
+| **Web Search & Crawl** | 工作空间 → 工具 → 从社区导入 | [📖 集成指南](docs/tools/web-search-crawl.md) |
+
+> **提示**: 社区工具是安装在 OpenWebUI 内部的，无需修改 `docker-compose.yml`。安装后只需在工具的 Valves 中填入对应服务的容器内地址即可。详见各工具的集成指南。
 
 ### 在 OpenWebUI 添加 MCP 工具
 

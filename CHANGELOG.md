@@ -6,7 +6,54 @@
 
 ---
 
-## 2026-03-12 - 初始版本
+## 2026-06-23 - SearXNG + Crawl4AI 集成
+
+### 新增服务
+
+- **SearXNG**: 聚合搜索引擎，为 Web Search 功能提供后端
+  - 配置文件: `searxng/settings.yml`
+  - 环境变量: `SEARXNG_SECRET_KEY`, `SEARXNG_DATA_PATH`
+- **Crawl4AI-Proxy**: 翻译 OpenWebUI external loader 请求到 Crawl4AI 格式
+  - 依赖 `crawl4ai` 服务
+- **openai-edge-tts**: 文字转语音服务 (默认注释，按需启用)
+
+### 基础设施改进
+
+- **Playwright**: 添加 `ipc: host`, `shm_size: 4gb`, `restart: unless-stopped`
+- **Tika**: 添加 `JAVA_OPTS=-Xmx4g`, 挂载 `tika-config.xml`, 内存限制 12G
+- **Crawl4AI**: `shm_size` 4g→8g, 修复网络为变量引用, 添加 healthcheck, `ENV_FILE` 路径修正
+- **Valkey**: healthcheck 添加密码认证 (`-a password`)
+- **Qdrant**: `QDRANT_URI` 支持 `QDRANT_PORT` 变量
+- **OpenWebUI**:
+  - Web Loader 切换为 `external` 模式 (crawl4ai-proxy)
+  - 新增 Web Search 变量组 (searxng)
+  - 新增 Playwright 重试配置
+  - CORS 分隔符改为分号 (OpenWebUI 标准)
+  - 日志级别 `DEBUG`→`INFO`
+
+### 新增文档
+
+- **`docs/tools/web-search-crawl.md`**: Web Search & Crawl 社区工具完整集成指南
+  - Valves 配置表 (适配本项目容器地址)
+  - LLM 模型选择建议
+  - Research Mode 配置
+  - 调试方法和常见问题排查
+
+### 目录结构优化
+
+- `crawl4ai/.llm.env`: Crawl4AI LLM 配置 (从根目录移入)
+- `tika/tika-config.xml`: Tika 解析器配置
+- `searxng/settings.yml`: SearXNG 引擎配置
+- 每个组件配置归入各自目录
+
+### 文档更新
+
+- README 新增 SearXNG/Crawl4AI 徽章和环境变量表
+- README 新增"社区工具"章节
+- README 可选服务表扩展
+- `.env.example` 新增 SearXNG/Crawl4AI/QDRANT_PORT 变量
+
+---
 
 ### 新增功能
 
@@ -41,6 +88,7 @@
 
 | 日期 | 版本 | 说明 |
 |------|------|------|
+| 2026-06-23 | 1.1.0 | SearXNG + Crawl4AI 集成, Web Search & Crawl 社区工具指南 |
 | 2026-03-12 | 1.0.0 | 初始版本发布 |
 
 ---
